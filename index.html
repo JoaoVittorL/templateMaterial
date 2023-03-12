@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Controle de saída e entrada de material.</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto|Varela+Round|Open+Sans">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+  <?!= HtmlService.createHtmlOutputFromFile('style').getContent(); ?>
+  <?!= HtmlService.createHtmlOutputFromFile('auto').getContent(); ?>
+  <style>
+
+  </style>
+  <script>
+    $(document).ready(function() {
+      getNameForAutoComplete();
+    });
+
+    function getNameForAutoComplete() {
+      google.script.run.withSuccessHandler(function(ar) {
+        console.log(ar);
+        statesArray = [];
+        ar.forEach(function(item, index) {
+          statesArray.push(item[0]);
+        });
+        $("#nameForAutoComplete").autocomplete({
+          source: statesArray
+        });
+      }).getNameForAutoComplete();
+    }
+
+ 
+  $(document).ready(function(){
+	  $('[data-toggle="tooltip"]').tooltip();
+  	var actions = $("table td:last-child").html();
+	// Append table with add row form on add new button click
+    $(".add-new").click(function(){
+		$(this).attr("disabled", "disabled");
+		var index = $("table tbody tr:last-child").index();
+        var row = '<tr>' +
+            '<td><input type="text" style="outline:0; border:none;" value="'+ addObra()+ '" class="form-control" name="name" id="name" disabled></td>' +
+            '<td><input type="text" style="outline:0; border:none;"  class="form-control" name="department" id="department" ></td>' +
+            '<td><input type="number" style="outline:0; border:none;" class="form-control" name="phone" id="phone"></td>' +
+			'<td>' + actions + '</td>' +
+        '</tr>';
+    $("table").append(row);		
+		$("table tbody tr").eq(index + 1).find(".add, .edit").toggle();
+    $('[data-toggle="tooltip"]').tooltip();
+    });
+	// Add row on add button click
+
+	$(document).on("click", ".add", function(){
+		var empty = false;
+		var input = $(this).parents("tr").find('input[type="text"]');
+        input.each(function(){
+			if(!$(this).val()){
+				$(this).addClass("error");
+				empty = true;
+			} else{
+                $(this).removeClass("error");
+            }
+		});
+		$(this).parents("tr").find(".error").first().focus();
+		if(!empty){
+			input.each(function(){
+				$(this).parent("td").html($(this).val());
+			});			
+			$(this).parents("tr").find(".add, .edit").toggle();
+			$(".add-new").removeAttr("disabled");
+		}		
+    });
+	// Edit row on edit button click
+
+	$(document).on("click", ".edit", function(){		
+        $(this).parents("tr").find("td:not(:last-child)").each(function(){
+			$(this).html('<input type="text" class="form-control" value="' + $(this).text() + '">');
+		});		
+		$(this).parents("tr").find(".add, .edit").toggle();
+		$(".add-new").attr("disabled", "disabled");
+    });
+	// Delete row on delete button click
+
+	$(document).on("click", ".delete", function(){
+        $(this).parents("tr").remove();
+		$(".add-new").removeAttr("disabled");
+    });
+});
+
+function addObra(){
+  const input = document.getElementById('nameForAutoComplete');
+  const materialName = document.getElementById('materialName');  
+  let inputValue = input.value
+  materialName.innerHTML = inputValue
+  return inputValue
+}
+
+
+function enviarDados() {
+  var tableData = [];
+  $('table tbody tr').each(function(row, tr) {
+    var rowData = {
+      'obra': $(tr).find("td:eq(0)").text(),
+      'material': $(tr).find("td:eq(1)").has('input').length ? $(tr).find("td:eq(1) input").val() : $(tr).find("td:eq(1)").text(),
+      'quantidade': $(tr).find("td:eq(2)").has('input').length ? $(tr).find("td:eq(2) input").val() : $(tr).find("td:eq(2)").text()
+    };
+    tableData.push(rowData);
+  });
+  console.log(tableData);
+  
+  var data = [];
+  tableData.forEach(function(row) {
+    data.push([row.obra, row.material, row.quantidade]);
+  });
+
+  google.script.run.withSuccessHandler(function() {
+     console.log("Dados enviados com sucesso!");
+  }).enviarDadosParaAplanilha(data);
+  
+  return data;
+}
+  </script>
+</head>
+
+<body>
+  <div class="container">
+    <div class="table-wrapper">
+      <div class="table-title">
+        <div style="display:flex;" class="row">
+          <div class="col-sm-8">
+            <h2>Controle de <b>Material</b></h2>
+          </div>
+          <div class="col-sm-4">
+            <button type="button" class="btn btn-info add-new"><i class="fa fa-plus"></i> Adicionar Material</button>
+          </div>
+        </div>
+      </div>
+      <div class="mb-4" style="display:flex; align-items:center; cursor:pointer;">
+        <input style="width:200px; height:30px; margin-right:10px;" class="form-control" type="text"  name="name"  id="nameForAutoComplete" placeholder="Obra..."  required>
+        <a class="add" onclick="addObra()"
+          data-toggle="tooltip"><i class="material-icons" style="color:green;">&#xE876;</i></a>
+      </div>
+      <table class="table table-bordered">
+        <thead>
+          <tr>
+            <th>Obra</th>
+            <th>Material</th>
+            <th>Quantidade</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td id="materialName" aria-disabled="true"></td>
+            <td><input type="text" style="outline:0; border:none;" id="materialForAutoComplete"></td>
+            <td><input style="outline:0; border:none;" type="number" min="1"/></td>
+            <td>
+              <a class="add" title="Adicionar" data-toggle="tooltip"><i class="material-icons">&#xE876;</i></a>
+              <a class="edit" title="Editar" data-toggle="tooltip"><i class="material-icons">&#xE254;</i></a>
+              <a class="delete" title="Excluir" data-toggle="tooltip"><i class="material-icons">&#xE872;</i></a>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <button type="button" onclick="enviarDados()" id="enviar-dados" class="btn btn-info">Enviar materiais</button>
+    </div>
+  </div>
+</body>
+
+</html>
